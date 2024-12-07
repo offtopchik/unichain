@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Название файла для сохранения скрипта
+SCRIPT_NAME="unichain.sh"
+
+save_and_run_script() {
+  echo "Сохраняю текущий скрипт в файл ${SCRIPT_NAME}..."
+  
+  # Создаем скрипт unichain.sh
+  cat > $SCRIPT_NAME << 'EOF'
+#!/bin/bash
+
 # Цвета для вывода
 GREEN="\033[0;32m"
 BLUE="\033[0;34m"
@@ -155,3 +165,16 @@ while true; do
     *) echo -e "${RED}Неверный ввод. Попробуйте снова.${RESET}" ;;
   esac
 done
+EOF
+
+  # Делаем файл исполняемым
+  chmod +x $SCRIPT_NAME
+  echo "Скрипт сохранен как ${SCRIPT_NAME} и сделан исполняемым."
+
+  # Запускаем меню
+  echo "Открытие меню..."
+  bash $SCRIPT_NAME
+}
+
+# Выполнение функции
+save_and_run_script
