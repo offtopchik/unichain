@@ -11,19 +11,34 @@ save_and_run_script() {
 #!/bin/bash
 
 # Цвета для вывода
-GREEN="\033[0;32m"
-BLUE="\033[0;34m"
-CYAN="\033[0;36m"
-RED="\033[0;31m"
-YELLOW="\033[0;33m"
+GREEN="\033[1;32m"
+BLUE="\033[1;34m"
+CYAN="\033[1;36m"
+RED="\033[1;31m"
+YELLOW="\033[1;33m"
+MAGENTA="\033[1;35m"
 RESET="\033[0m"
 
+# Символ рамки
+BORDER="========================================="
+
 print_header() {
+  clear
   echo -e "${CYAN}"
-  echo "========================================="
+  echo "$BORDER"
   echo "         🚀 Unichain Node Manager        "
-  echo "========================================="
+  echo "$BORDER"
   echo -e "${RESET}"
+}
+
+loading_animation() {
+  local msg=$1
+  echo -ne "${YELLOW}${msg}${RESET}"
+  for ((i=0; i<3; i++)); do
+    echo -ne "."
+    sleep 0.5
+  done
+  echo -ne "\r${RESET}"
 }
 
 download_node() {
@@ -31,36 +46,47 @@ download_node() {
   echo -e "${YELLOW}Начинаю установку всех необходимых компонентов...${RESET}\n"
 
   echo -e "${BLUE}1. Обновление системы...${RESET}"
+  loading_animation "Обновляю систему"
   sudo apt update -y && sudo apt upgrade -y
+  echo -e "${GREEN}Система успешно обновлена!${RESET}\n"
 
   echo -e "${BLUE}2. Установка зависимостей...${RESET}"
+  loading_animation "Устанавливаю зависимости"
   sudo apt-get install -y make build-essential unzip lz4 gcc git jq curl
+  echo -e "${GREEN}Зависимости установлены!${RESET}\n"
 
   echo -e "${BLUE}3. Установка Docker...${RESET}"
+  loading_animation "Устанавливаю Docker"
   sudo apt install -y docker.io
   sudo systemctl start docker
   sudo systemctl enable docker
+  echo -e "${GREEN}Docker установлен и запущен!${RESET}\n"
 
   echo -e "${BLUE}4. Установка Docker Compose...${RESET}"
+  loading_animation "Устанавливаю Docker Compose"
   sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   sudo chmod +x /usr/local/bin/docker-compose
+  echo -e "${GREEN}Docker Compose установлен!${RESET}\n"
 
   echo -e "${BLUE}5. Клонирование репозитория...${RESET}"
+  loading_animation "Клонирую репозиторий"
   git clone https://github.com/Uniswap/unichain-node
   cd unichain-node || { echo -e "${RED}Ошибка: не удалось войти в директорию unichain-node${RESET}"; return; }
+  echo -e "${GREEN}Репозиторий успешно клонирован!${RESET}\n"
 
   echo -e "${BLUE}6. Настройка ENV для Sepolia...${RESET}"
   if [[ -f .env.sepolia ]]; then
     sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
     sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
+    echo -e "${GREEN}ENV файл настроен!${RESET}\n"
   else
-    echo -e "${RED}Ошибка: файл .env.sepolia не найден.${RESET}"
+    echo -e "${RED}Ошибка: файл .env.sepolia не найден.${RESET}\n"
     return
   fi
 
   echo -e "${BLUE}7. Запуск Docker Compose...${RESET}"
+  loading_animation "Запускаю Docker Compose"
   sudo docker-compose up -d
-
   echo -e "${GREEN}\nУстановка завершена!${RESET}"
 }
 
@@ -89,14 +115,14 @@ check_node() {
 
 check_logs_op_node() {
   print_header
-  echo -e "${YELLOW}Просмотр логов OP Node...${RESET}"
-  sudo docker logs unichain-node-op-node-1
+  echo -e "${YELLOW}Просмотр логов OP Node за последние 24 часа...${RESET}"
+  sudo docker logs --since 24h unichain-node-op-node-1
 }
 
 check_logs_unichain() {
   print_header
-  echo -e "${YELLOW}Просмотр логов Unichain Execution Client...${RESET}"
-  sudo docker logs unichain-node-execution-client-1
+  echo -e "${YELLOW}Просмотр логов Unichain Execution Client за последние 24 часа...${RESET}"
+  sudo docker logs --since 24h unichain-node-execution-client-1
 }
 
 stop_node() {
@@ -143,8 +169,8 @@ while true; do
   echo -e "1. 🚀 ${GREEN}Установить ноду${RESET}"
   echo -e "2. 🔄 ${YELLOW}Перезагрузить ноду${RESET}"
   echo -e "3. ✅ ${CYAN}Проверить ноду${RESET}"
-  echo -e "4. 📜 ${BLUE}Посмотреть логи Unichain (OP)${RESET}"
-  echo -e "5. 📜 ${BLUE}Посмотреть логи Unichain${RESET}"
+  echo -e "4. 📜 ${BLUE}Посмотреть логи Unichain (OP) за последние 24 часа${RESET}"
+  echo -e "5. 📜 ${BLUE}Посмотреть логи Unichain Execution Client за последние 24 часа${RESET}"
   echo -e "6. 🛑 ${RED}Остановить ноду${RESET}"
   echo -e "7. 🔑 ${CYAN}Посмотреть приватный ключ${RESET}"
   echo -e "8. ✏️ ${YELLOW}Изменить приватный ключ${RESET}"
