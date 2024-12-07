@@ -115,15 +115,15 @@ check_node() {
 
 check_logs_op_node() {
   print_header
-  echo -e "${YELLOW}Просмотр последних 500 строк логов OP Node...${RESET}"
-  sudo docker logs --tail 500 unichain-node-op-node-1 2>/dev/null || \
+  echo -e "${YELLOW}Просмотр последних 500 строк логов OP Node. Чтобы выйти, нажмите Ctrl+C.${RESET}"
+  sudo docker logs --tail 500 -f unichain-node-op-node-1 2>/dev/null || \
   echo -e "${RED}Логи OP Node недоступны. Проверьте имя контейнера или его статус.${RESET}"
 }
 
 check_logs_unichain() {
   print_header
-  echo -e "${YELLOW}Просмотр последних 500 строк логов Unichain Execution Client...${RESET}"
-  sudo docker logs --tail 500 unichain-node-execution-client-1 2>/dev/null || \
+  echo -e "${YELLOW}Просмотр последних 500 строк логов Unichain Execution Client. Чтобы выйти, нажмите Ctrl+C.${RESET}"
+  sudo docker logs --tail 500 -f unichain-node-execution-client-1 2>/dev/null || \
   echo -e "${RED}Логи Unichain недоступны. Проверьте имя контейнера или его статус.${RESET}"
 }
 
