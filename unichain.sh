@@ -51,9 +51,8 @@ download_node() {
 
   echo -e "${BLUE}6. Настройка ENV для Sepolia...${RESET}"
   if [[ -f .env.sepolia ]]; then
-    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://rpc.sepolia.org|' .env.sepolia
-    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://your.sepolia.beacon.node/endpoint-here|' .env.sepolia
-    echo -e "${GREEN}ENV файл успешно настроен!${RESET}"
+    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
+    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
   else
     echo -e "${RED}Ошибка: файл .env.sepolia не найден.${RESET}"
     return
@@ -90,16 +89,14 @@ check_node() {
 
 check_logs_op_node() {
   print_header
-  echo -e "${YELLOW}Просмотр логов OP Node в реальном времени. Чтобы выйти, нажмите Ctrl+C.${RESET}"
-  sudo docker logs -f unichain-node-op-node-1 2>/dev/null || \
-  echo -e "${RED}Логи OP Node недоступны. Проверьте имя контейнера или его статус.${RESET}"
+  echo -e "${YELLOW}Просмотр логов OP Node...${RESET}"
+  sudo docker logs unichain-node-op-node-1
 }
 
 check_logs_unichain() {
   print_header
-  echo -e "${YELLOW}Просмотр логов Unichain Execution Client в реальном времени. Чтобы выйти, нажмите Ctrl+C.${RESET}"
-  sudo docker logs -f unichain-node-execution-client-1 2>/dev/null || \
-  echo -e "${RED}Логи Unichain недоступны. Проверьте имя контейнера или его статус.${RESET}"
+  echo -e "${YELLOW}Просмотр логов Unichain Execution Client...${RESET}"
+  sudo docker logs unichain-node-execution-client-1
 }
 
 stop_node() {
@@ -146,8 +143,8 @@ while true; do
   echo -e "1. 🚀 ${GREEN}Установить ноду${RESET}"
   echo -e "2. 🔄 ${YELLOW}Перезагрузить ноду${RESET}"
   echo -e "3. ✅ ${CYAN}Проверить ноду${RESET}"
-  echo -e "4. 📜 ${BLUE}Посмотреть логи Unichain (OP) в реальном времени${RESET}"
-  echo -e "5. 📜 ${BLUE}Посмотреть логи Unichain Execution Client в реальном времени${RESET}"
+  echo -e "4. 📜 ${BLUE}Посмотреть логи Unichain (OP)${RESET}"
+  echo -e "5. 📜 ${BLUE}Посмотреть логи Unichain${RESET}"
   echo -e "6. 🛑 ${RED}Остановить ноду${RESET}"
   echo -e "7. 🔑 ${CYAN}Посмотреть приватный ключ${RESET}"
   echo -e "8. ✏️ ${YELLOW}Изменить приватный ключ${RESET}"
