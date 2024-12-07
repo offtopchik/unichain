@@ -49,7 +49,17 @@ download_node() {
   git clone https://github.com/Uniswap/unichain-node
   cd unichain-node || { echo -e "${RED}Ошибка: не удалось войти в директорию unichain-node${RESET}"; return; }
 
-  echo -e "${BLUE}6. Запуск Docker Compose...${RESET}"
+  echo -e "${BLUE}6. Настройка ENV для Sepolia...${RESET}"
+  if [[ -f .env.sepolia ]]; then
+    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://rpc.sepolia.org|' .env.sepolia
+    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://your.sepolia.beacon.node/endpoint-here|' .env.sepolia
+    echo -e "${GREEN}ENV файл успешно настроен!${RESET}"
+  else
+    echo -e "${RED}Ошибка: файл .env.sepolia не найден.${RESET}"
+    return
+  fi
+
+  echo -e "${BLUE}7. Запуск Docker Compose...${RESET}"
   sudo docker-compose up -d
 
   echo -e "${GREEN}\nУстановка завершена!${RESET}"
@@ -168,9 +178,6 @@ EOF
   echo "Открытие меню..."
   bash $SCRIPT_NAME
 }
-
-# Выполнение функции
-save_and_run_script
 
 # Выполнение функции
 save_and_run_script
