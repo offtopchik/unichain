@@ -115,14 +115,16 @@ check_node() {
 
 check_logs_op_node() {
   print_header
-  echo -e "${YELLOW}Просмотр логов OP Node за последние 24 часа...${RESET}"
-  sudo docker logs --since 24h unichain-node-op-node-1
+  echo -e "${YELLOW}Просмотр последних 500 строк логов OP Node...${RESET}"
+  sudo docker logs --tail 500 unichain-node-op-node-1 2>/dev/null || \
+  echo -e "${RED}Логи OP Node недоступны. Проверьте имя контейнера или его статус.${RESET}"
 }
 
 check_logs_unichain() {
   print_header
-  echo -e "${YELLOW}Просмотр логов Unichain Execution Client за последние 24 часа...${RESET}"
-  sudo docker logs --since 24h unichain-node-execution-client-1
+  echo -e "${YELLOW}Просмотр последних 500 строк логов Unichain Execution Client...${RESET}"
+  sudo docker logs --tail 500 unichain-node-execution-client-1 2>/dev/null || \
+  echo -e "${RED}Логи Unichain недоступны. Проверьте имя контейнера или его статус.${RESET}"
 }
 
 stop_node() {
@@ -169,8 +171,8 @@ while true; do
   echo -e "1. 🚀 ${GREEN}Установить ноду${RESET}"
   echo -e "2. 🔄 ${YELLOW}Перезагрузить ноду${RESET}"
   echo -e "3. ✅ ${CYAN}Проверить ноду${RESET}"
-  echo -e "4. 📜 ${BLUE}Посмотреть логи Unichain (OP) за последние 24 часа${RESET}"
-  echo -e "5. 📜 ${BLUE}Посмотреть логи Unichain Execution Client за последние 24 часа${RESET}"
+  echo -e "4. 📜 ${BLUE}Посмотреть последние 500 строк логов Unichain (OP)${RESET}"
+  echo -e "5. 📜 ${BLUE}Посмотреть последние 500 строк логов Unichain Execution Client${RESET}"
   echo -e "6. 🛑 ${RED}Остановить ноду${RESET}"
   echo -e "7. 🔑 ${CYAN}Посмотреть приватный ключ${RESET}"
   echo -e "8. ✏️ ${YELLOW}Изменить приватный ключ${RESET}"
