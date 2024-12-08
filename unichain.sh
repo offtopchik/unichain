@@ -51,8 +51,8 @@ download_node() {
 
   echo -e "${BLUE}6. Настройка ENV для Sepolia...${RESET}"
   if [[ -f .env.sepolia ]]; then
-    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://rpc.sepolia.org|' .env.sepolia
-    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://your.sepolia.beacon.node/endpoint-here|' .env.sepolia
+    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
+    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
   else
     echo -e "${RED}Ошибка: файл .env.sepolia не найден.${RESET}"
     return
