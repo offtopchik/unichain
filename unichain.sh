@@ -136,6 +136,33 @@ exit_from_script() {
   exit 0
 }
 
+update_node() {
+  print_header
+  echo -e "${YELLOW}Обновление ноды...${RESET}"
+
+  local HOMEDIR="$HOME/unichain-node"
+  
+  if [[ -d "$HOMEDIR" ]]; then
+    echo -e "${BLUE}1. Переход в директорию ноды...${RESET}"
+    cd "$HOMEDIR" || { echo -e "${RED}Ошибка: не удалось войти в директорию ${HOMEDIR}.${RESET}"; return; }
+
+    echo -e "${BLUE}2. Получение последних изменений из репозитория...${RESET}"
+    git pull || { echo -e "${RED}Ошибка: не удалось обновить репозиторий.${RESET}"; return; }
+
+    echo -e "${BLUE}3. Обновление образов Docker...${RESET}"
+    sudo docker-compose down
+    sudo docker-compose pull
+    sudo docker-compose build || { echo -e "${RED}Ошибка: не удалось пересобрать образы Docker.${RESET}"; return; }
+
+    echo -e "${BLUE}4. Перезапуск Docker Compose...${RESET}"
+    sudo docker-compose up -d || { echo -e "${RED}Ошибка: не удалось запустить Docker Compose.${RESET}"; return; }
+
+    echo -e "${GREEN}Нода успешно обновлена!${RESET}"
+  else
+    echo -e "${RED}Ошибка: директория ${HOMEDIR} не найдена. Проверьте, установлена ли нода.${RESET}"
+  fi
+}
+
 # Главное меню
 while true; do
   print_header
@@ -149,6 +176,7 @@ while true; do
   echo -e "7. 🔑 ${CYAN}Посмотреть приватный ключ${RESET}"
   echo -e "8. ✏️ ${YELLOW}Изменить приватный ключ${RESET}"
   echo -e "9. ❌ ${RED}Выйти из скрипта${RESET}\n"
+  echo -e "10. ⬆️ ${GREEN}Обновить ноду${RESET}"
 
   read -p "Выберите пункт меню: " choice
 
@@ -162,6 +190,7 @@ while true; do
     7) display_private_key ;;
     8) edit_private_key ;;
     9) exit_from_script ;;
+    10) update_node ;;
     *) echo -e "${RED}Неверный ввод. Попробуйте снова.${RESET}" ;;
   esac
 done
