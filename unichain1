@@ -1,153 +1,104 @@
 #!/bin/bash
 
-# Создаем скрипт unichain.sh
-cat << 'EOF' > unichain.sh
-#!/bin/bash
+set -e
 
-# Цвета текста
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # Сброс цвета
+NODE_DIR="unichain-node"
 
-# Функция для установки ноды
 function install_node() {
-    echo -e "${CYAN}>> Устанавливаем систему и зависимости...${NC}"
+    echo "=== Установка Unichain Node ==="
+    
+    # Обновление системы
+    echo "Обновляем систему..."
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y git curl build-essential python3 python3-pip
 
-    echo -e "${CYAN}>> Устанавливаем Docker...${NC}"
-    sudo apt install -y apt-transport-https ca-certificates software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io
+    # Установка необходимых инструментов
+    echo "Устанавливаем базовые пакеты..."
+    sudo apt install -y curl git build-essential unzip wget software-properties-common
 
-    echo -e "${CYAN}>> Устанавливаем Docker Compose...${NC}"
-    sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    # Установка Node.js
+    echo "Устанавливаем Node.js..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt install -y nodejs
+
+    # Проверка установки Node.js
+    echo "Проверяем установку Node.js..."
+    node -v
+    npm -v
+
+    # Установка Go
+    echo "Устанавливаем Go..."
+    GO_VERSION="1.21.1"
+    wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+    sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+    rm go${GO_VERSION}.linux-amd64.tar.gz
+    echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc
+    source ~/.bashrc
+    go version
+
+    # Клонирование репозитория Unichain Node
+    echo "Клонируем репозиторий Unichain Node..."
+    if [ ! -d "$NODE_DIR" ]; then
+        git clone https://github.com/Uniswap/unichain-node.git
+    else
+        echo "Репозиторий уже склонирован."
+    fi
+    cd $NODE_DIR
+
+    # Установка зависимостей проекта
+    echo "Устанавливаем зависимости проекта..."
+    npm install
+
+    # Установка Docker
+    echo "Устанавливаем Docker..."
+    sudo apt install -y docker.io
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker $USER
+
+    # Установка Docker Compose
+    echo "Устанавливаем Docker Compose..."
+    sudo curl -L "https://github.com/docker/compose/releases/download/2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
+    docker-compose --version
 
-    echo -e "${CYAN}>> Проверяем наличие каталога unichain-node...${NC}"
-    if [ -d "unichain-node" ]; then
-        echo -e "${YELLOW}Каталог 'unichain-node' уже существует. Удаляем...${NC}"
-        rm -rf unichain-node
-    fi
-
-    echo -e "${CYAN}>> Клонируем репозиторий Unichain Node...${NC}"
-    git clone https://github.com/Uniswap/unichain-node.git || { echo -e "${RED}Ошибка при клонировании репозитория!${NC}"; exit 1; }
-
-    cd unichain-node || { echo -e "${RED}Ошибка: каталог unichain-node не найден!${NC}"; exit 1; }
-
-    echo -e "${CYAN}>> Установка завершена.${NC}"
+    # Сборка и запуск
+    echo "Собираем и запускаем Unichain Node..."
+    npm run build
+    npm run start &
+    echo "Unichain Node установлена и запущена."
 }
 
-# Функция для просмотра содержимого файлов
-function view_files() {
-    echo -e "${CYAN}>> Просмотр содержимого genesis-l2.json...${NC}"
-    if [ -f "unichain-node/genesis-l2.json" ]; then
-        cat unichain-node/genesis-l2.json
+function restart_node() {
+    echo "=== Перезапуск Unichain Node ==="
+    if [ -d "$NODE_DIR" ]; then
+        cd $NODE_DIR
+        pkill -f "npm run start" || echo "Нода не запущена. Запускаем заново."
+        npm run start &
+        echo "Unichain Node перезапущена."
     else
-        echo -e "${RED}Файл genesis-l2.json не найден.${NC}"
-    fi
-
-    echo -e "${CYAN}>> Просмотр содержимого rollup.json...${NC}"
-    if [ -f "unichain-node/rollup.json" ]; then
-        cat unichain-node/rollup.json
-    else
-        echo -e "${RED}Файл rollup.json не найден.${NC}"
+        echo "Unichain Node не установлена. Сначала выполните установку."
     fi
 }
 
-# Функция для изменения содержимого файлов
-function edit_files() {
-    echo -e "${YELLOW}>> Изменение файла genesis-l2.json...${NC}"
-    if [ -f "unichain-node/genesis-l2.json" ]; then
-        nano unichain-node/genesis-l2.json
-    else
-        echo -e "${RED}Файл genesis-l2.json не найден.${NC}"
-    fi
-
-    echo -e "${YELLOW}>> Изменение файла rollup.json...${NC}"
-    if [ -f "unichain-node/rollup.json" ]; then
-        nano unichain-node/rollup.json
-    else
-        echo -e "${RED}Файл rollup.json не найден.${NC}"
-    fi
-}
-
-# Функция для остановки ноды
 function stop_node() {
-    echo -e "${RED}>> Останавливаем ноду...${NC}"
-    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
-    echo -e "${GREEN}Нода остановлена.${NC}"
+    echo "=== Остановка Unichain Node ==="
+    pkill -f "npm run start" && echo "Unichain Node остановлена." || echo "Unichain Node не запущена."
 }
 
-# Функция для проверки состояния ноды
-function check_node() {
-    echo -e "${BLUE}>> Проверяем состояние ноды...${NC}"
-    docker ps
-}
-
-# Функция для просмотра приватного ключа
-function view_private_key() {
-    echo -e "${CYAN}>> Просмотр приватного ключа...${NC}"
-    if [ -f "unichain-node/nodekey" ]; then
-        cat unichain-node/nodekey
-    else
-        echo -e "${RED}Файл nodekey не найден.${NC}"
-    fi
-}
-
-# Функция для изменения приватного ключа
-function change_private_key() {
-    echo -e "${YELLOW}>> Изменение приватного ключа...${NC}"
-    if [ -f "unichain-node/nodekey" ]; then
-        nano unichain-node/nodekey
-    else
-        echo -e "${RED}Файл nodekey не найден. Создаю...${NC}"
-        touch unichain-node/nodekey
-        nano unichain-node/nodekey
-    fi
-}
-
-# Красивое меню
 while true; do
-    clear
-    echo -e "${CYAN}============================================${NC}"
-    echo -e "${CYAN}       🌟 Меню управления Unichain Node 🌟${NC}"
-    echo -e "${CYAN}============================================${NC}"
-    echo -e "${GREEN}1. Установить ноду${NC}"
-    echo -e "${GREEN}2. Просмотреть файлы genesis-l2.json и rollup.json${NC}"
-    echo -e "${GREEN}3. Изменить файлы genesis-l2.json и rollup.json${NC}"
-    echo -e "${GREEN}4. Остановить ноду${NC}"
-    echo -e "${GREEN}5. Проверить состояние ноды${NC}"
-    echo -e "${GREEN}6. Просмотреть приватный ключ${NC}"
-    echo -e "${GREEN}7. Изменить приватный ключ${NC}"
-    echo -e "${RED}8. Выйти${NC}"
-    echo -e "${CYAN}============================================${NC}"
-    read -p "Выберите действие (1-8): " choice
+    echo ""
+    echo "Меню:"
+    echo "1) Установить ноду"
+    echo "2) Перезапустить ноду"
+    echo "3) Остановить ноду"
+    echo "4) Выйти"
+    read -rp "Выберите пункт: " choice
 
     case $choice in
         1) install_node ;;
-        2) view_files ;;
-        3) edit_files ;;
-        4) stop_node ;;
-        5) check_node ;;
-        6) view_private_key ;;
-        7) change_private_key ;;
-        8) echo -e "${RED}Выход из скрипта.${NC}"; break ;;
-        *) echo -e "${RED}Неверный выбор. Пожалуйста, выберите от 1 до 8.${NC}" ;;
+        2) restart_node ;;
+        3) stop_node ;;
+        4) echo "Выход."; exit 0 ;;
+        *) echo "Неверный выбор. Попробуйте снова." ;;
     esac
-    read -p "Нажмите Enter для возврата в меню..."
 done
-EOF
-
-# Делаем созданный скрипт исполняемым
-chmod +x unichain.sh
-
-# Сообщение об успешном создании и автозапуск меню
-echo -e "${GREEN}Скрипт 'unichain.sh' успешно создан!${NC}"
-echo -e "Запускаем меню управления..."
-bash unichain.sh
