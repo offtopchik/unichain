@@ -33,8 +33,15 @@ function install_node() {
     sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
 
+    echo -e "${CYAN}>> Проверяем наличие каталога unichain-node...${NC}"
+    if [ -d "unichain-node" ]; then
+        echo -e "${YELLOW}Каталог 'unichain-node' уже существует. Удаляем...${NC}"
+        rm -rf unichain-node
+    fi
+
     echo -e "${CYAN}>> Клонируем репозиторий Unichain Node...${NC}"
-    git clone https://github.com/Uniswap/unichain-node.git || echo -e "${YELLOW}Репозиторий уже клонирован.${NC}"
+    git clone https://github.com/Uniswap/unichain-node.git || { echo -e "${RED}Ошибка при клонировании репозитория!${NC}"; exit 1; }
+
     cd unichain-node || { echo -e "${RED}Ошибка: каталог unichain-node не найден!${NC}"; exit 1; }
 
     echo -e "${CYAN}>> Проверяем наличие package.json...${NC}"
@@ -51,7 +58,7 @@ function install_node() {
     echo -e "${GREEN}>> Установка завершена. Нода запущена.${NC}"
 }
 
-# Функции управления нодой
+# Функция для перезапуска ноды
 function restart_node() {
     echo -e "${YELLOW}>> Перезапускаем ноду...${NC}"
     cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
@@ -60,6 +67,7 @@ function restart_node() {
     echo -e "${GREEN}>> Нода успешно перезапущена.${NC}"
 }
 
+# Функция для остановки ноды
 function stop_node() {
     echo -e "${RED}>> Останавливаем ноду...${NC}"
     cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
@@ -67,21 +75,25 @@ function stop_node() {
     echo -e "${GREEN}>> Нода успешно остановлена.${NC}"
 }
 
+# Функция для проверки состояния ноды
 function check_node() {
     echo -e "${BLUE}>> Проверяем состояние ноды...${NC}"
     docker ps
 }
 
+# Функция для просмотра логов Unichain OP
 function view_logs_op() {
     echo -e "${CYAN}>> Логи Unichain OP (нажмите Ctrl+C для выхода)...${NC}"
     docker logs --follow unichain-op
 }
 
+# Функция для просмотра логов Unichain
 function view_logs_unichain() {
     echo -e "${CYAN}>> Логи Unichain (нажмите Ctrl+C для выхода)...${NC}"
     docker logs --follow unichain
 }
 
+# Функция для просмотра приватного ключа
 function view_private_key() {
     echo -e "${BLUE}>> Просмотр приватного ключа...${NC}"
     cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
@@ -93,6 +105,7 @@ function view_private_key() {
     fi
 }
 
+# Функция для изменения приватного ключа
 function change_private_key() {
     echo -e "${YELLOW}>> Изменение приватного ключа...${NC}"
     cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
