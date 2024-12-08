@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# Создаем скрипт unichain.sh
+cat << 'EOF' > unichain.sh
+#!/bin/bash
+
+# Цвета текста
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # Нет цвета
+
+# Функции для работы с нодой
+function install_node() {
+    echo -e "${CYAN}>> Устанавливаем ноду...${NC}"
+    sudo apt update && sudo apt upgrade -y
+    sudo apt install -y git curl build-essential python3 python3-pip
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt install -y nodejs
+    sudo apt install -y apt-transport-https ca-certificates software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
+    sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    git clone https://github.com/Uniswap/unichain-node.git || echo "Репозиторий уже клонирован"
+    cd unichain-node || exit
+    npm install
+    npm run start &
+    echo -e "${GREEN}>> Установка завершена. Нода запущена.${NC}"
+}
+
+function restart_node() {
+    echo -e "${YELLOW}>> Перезапускаем ноду...${NC}"
+    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
+    npm run stop || echo "Нода не была запущена."
+    npm run start &
+    echo -e "${GREEN}>> Нода успешно перезапущена.${NC}"
+}
+
+function stop_node() {
+    echo -e "${RED}>> Останавливаем ноду...${NC}"
+    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
+    npm run stop
+    echo -e "${GREEN}>> Нода успешно остановлена.${NC}"
+}
+
+function check_node() {
+    echo -e "${BLUE}>> Проверяем состояние ноды...${NC}"
+    docker ps
+}
+
+function view_logs_op() {
+    echo -e "${CYAN}>> Логи Unichain OP (нажмите Ctrl+C для выхода)...${NC}"
+    docker logs --follow unichain-op
+}
+
+function view_logs_unichain() {
+    echo -e "${CYAN}>> Логи Unichain (нажмите Ctrl+C для выхода)...${NC}"
+    docker logs --follow unichain
+}
+
+function view_private_key() {
+    echo -e "${BLUE}>> Просмотр приватного ключа...${NC}"
+    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
+    if [ -f .env ]; then
+        grep PRIVATE_KEY .env | cut -d '=' -f2
+    else
+        echo -e "${RED}Файл .env не найден. Приватный ключ отсутствует.${NC}"
+    fi
+}
+
+function change_private_key() {
+    echo -e "${YELLOW}>> Изменение приватного ключа...${NC}"
+    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
+    if [ ! -f .env ]; then
+        echo -e "${YELLOW}Файл .env не найден. Создаем новый...${NC}"
+        touch .env
+    fi
+    read -p "Введите новый приватный ключ: " new_key
+    if grep -q PRIVATE_KEY .env; then
+        sed -i "s/^PRIVATE_KEY=.*/PRIVATE_KEY=$new_key/" .env
+    else
+        echo "PRIVATE_KEY=$new_key" >> .env
+    fi
+    echo -e "${GREEN}>> Приватный ключ успешно обновлен.${NC}"
+}
+
+# Красивое меню
+while true; do
+    clear
+    echo -e "${CYAN}============================================${NC}"
+    echo -e "${CYAN}       🌟 Меню управления Unichain Node 🌟${NC}"
+    echo -e "${CYAN}============================================${NC}"
+    echo -e "${GREEN}1. Установить ноду${NC}"
+    echo -e "${GREEN}2. Перезапустить ноду${NC}"
+    echo -e "${GREEN}3. Проверить ноду${NC}"
+    echo -e "${GREEN}4. Логи Unichain OP${NC}"
+    echo -e "${GREEN}5. Логи Unichain${NC}"
+    echo -e "${GREEN}6. Остановить ноду${NC}"
+    echo -e "${GREEN}7. Просмотр приватного ключа${NC}"
+    echo -e "${GREEN}8. Изменить приватный ключ${NC}"
+    echo -e "${RED}9. Выйти${NC}"
+    echo -e "${CYAN}============================================${NC}"
+    read -p "Выберите действие (1-9): " choice
+
+    case $choice in
+        1) install_node ;;
+        2) restart_node ;;
+        3) check_node ;;
+        4) view_logs_op ;;
+        5) view_logs_unichain ;;
+        6) stop_node ;;
+        7) view_private_key ;;
+        8) change_private_key ;;
+        9) echo -e "${RED}Выход из скрипта.${NC}"; break ;;
+        *) echo -e "${RED}Неверный выбор. Пожалуйста, выберите от 1 до 9.${NC}" ;;
+    esac
+    read -p "Нажмите Enter для возврата в меню..."
+done
+EOF
+
+# Делаем скрипт исполняемым
+chmod +x unichain.sh
+
+echo -e "${GREEN}Скрипт 'unichain.sh' успешно создан!${NC}"
+echo -e "Запустите его с помощью команды: ${CYAN}bash unichain.sh${NC}"
