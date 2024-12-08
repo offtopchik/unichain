@@ -40,14 +40,6 @@ function install_node() {
 
     cd unichain-node || { echo -e "${RED}Ошибка: каталог unichain-node не найден!${NC}"; exit 1; }
 
-    echo -e "${CYAN}>> Проверяем наличие файлов genesis-l2.json и rollup.json...${NC}"
-    if [ -f "genesis-l2.json" ] && [ -f "rollup.json" ]; then
-        echo -e "${GREEN}Файлы 'genesis-l2.json' и 'rollup.json' найдены.${NC}"
-    else
-        echo -e "${RED}Один или оба файла отсутствуют. Проверьте репозиторий.${NC}"
-        exit 1
-    fi
-
     echo -e "${CYAN}>> Установка завершена.${NC}"
 }
 
