@@ -89,14 +89,14 @@ check_node() {
 
 check_logs_op_node() {
   print_header
-  echo -e "${YELLOW}Просмотр логов OP Node...${RESET}"
-  sudo docker logs unichain-node-op-node-1
+  echo -e "${YELLOW}Просмотр логов OP Node в реальном времени... (Нажмите Ctrl+C для выхода)${RESET}"
+  sudo docker logs -f unichain-node-op-node-1
 }
 
 check_logs_unichain() {
   print_header
-  echo -e "${YELLOW}Просмотр логов Unichain Execution Client...${RESET}"
-  sudo docker logs unichain-node-execution-client-1
+  echo -e "${YELLOW}Просмотр логов Unichain Execution Client в реальном времени... (Нажмите Ctrl+C для выхода)${RESET}"
+  sudo docker logs -f unichain-node-execution-client-1
 }
 
 stop_node() {
