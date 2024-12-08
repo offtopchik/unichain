@@ -18,10 +18,6 @@ function install_node() {
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y git curl build-essential python3 python3-pip
 
-    echo -e "${CYAN}>> Устанавливаем Node.js...${NC}"
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-    sudo apt install -y nodejs
-
     echo -e "${CYAN}>> Устанавливаем Docker...${NC}"
     sudo apt install -y apt-transport-https ca-certificates software-properties-common
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -44,35 +40,56 @@ function install_node() {
 
     cd unichain-node || { echo -e "${RED}Ошибка: каталог unichain-node не найден!${NC}"; exit 1; }
 
-    echo -e "${CYAN}>> Проверяем наличие package.json...${NC}"
-    if [ ! -f "package.json" ]; then
-        echo -e "${RED}Ошибка: файл package.json отсутствует. Проверьте репозиторий.${NC}"
+    echo -e "${CYAN}>> Проверяем наличие файлов genesis-l2.json и rollup.json...${NC}"
+    if [ -f "genesis-l2.json" ] && [ -f "rollup.json" ]; then
+        echo -e "${GREEN}Файлы 'genesis-l2.json' и 'rollup.json' найдены.${NC}"
+    else
+        echo -e "${RED}Один или оба файла отсутствуют. Проверьте репозиторий.${NC}"
         exit 1
     fi
 
-    echo -e "${CYAN}>> Устанавливаем зависимости npm...${NC}"
-    npm install
-
-    echo -e "${CYAN}>> Запускаем ноду...${NC}"
-    npm run start &
-    echo -e "${GREEN}>> Установка завершена. Нода запущена.${NC}"
+    echo -e "${CYAN}>> Установка завершена.${NC}"
 }
 
-# Функция для перезапуска ноды
-function restart_node() {
-    echo -e "${YELLOW}>> Перезапускаем ноду...${NC}"
-    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
-    npm run stop || echo -e "${RED}Нода не была запущена.${NC}"
-    npm run start &
-    echo -e "${GREEN}>> Нода успешно перезапущена.${NC}"
+# Функция для просмотра содержимого файлов
+function view_files() {
+    echo -e "${CYAN}>> Просмотр содержимого genesis-l2.json...${NC}"
+    if [ -f "unichain-node/genesis-l2.json" ]; then
+        cat unichain-node/genesis-l2.json
+    else
+        echo -e "${RED}Файл genesis-l2.json не найден.${NC}"
+    fi
+
+    echo -e "${CYAN}>> Просмотр содержимого rollup.json...${NC}"
+    if [ -f "unichain-node/rollup.json" ]; then
+        cat unichain-node/rollup.json
+    else
+        echo -e "${RED}Файл rollup.json не найден.${NC}"
+    fi
+}
+
+# Функция для изменения содержимого файлов
+function edit_files() {
+    echo -e "${YELLOW}>> Изменение файла genesis-l2.json...${NC}"
+    if [ -f "unichain-node/genesis-l2.json" ]; then
+        nano unichain-node/genesis-l2.json
+    else
+        echo -e "${RED}Файл genesis-l2.json не найден.${NC}"
+    fi
+
+    echo -e "${YELLOW}>> Изменение файла rollup.json...${NC}"
+    if [ -f "unichain-node/rollup.json" ]; then
+        nano unichain-node/rollup.json
+    else
+        echo -e "${RED}Файл rollup.json не найден.${NC}"
+    fi
 }
 
 # Функция для остановки ноды
 function stop_node() {
     echo -e "${RED}>> Останавливаем ноду...${NC}"
     cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
-    npm run stop
-    echo -e "${GREEN}>> Нода успешно остановлена.${NC}"
+    echo -e "${GREEN}Нода остановлена.${NC}"
 }
 
 # Функция для проверки состояния ноды
@@ -81,41 +98,26 @@ function check_node() {
     docker ps
 }
 
-# Функция для просмотра логов Unichain OP
-function view_logs_op() {
-    echo -e "${CYAN}>> Логи Unichain OP (нажмите Ctrl+C для выхода)...${NC}"
-    docker logs --follow unichain-op
-}
-
-# Функция для просмотра логов Unichain
-function view_logs_unichain() {
-    echo -e "${CYAN}>> Логи Unichain (нажмите Ctrl+C для выхода)...${NC}"
-    docker logs --follow unichain
-}
-
 # Функция для просмотра приватного ключа
 function view_private_key() {
-    echo -e "${BLUE}>> Просмотр приватного ключа...${NC}"
-    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
-    if [ -f nodekey ]; then
-        echo -e "${GREEN}Приватный ключ:${NC}"
-        cat nodekey
+    echo -e "${CYAN}>> Просмотр приватного ключа...${NC}"
+    if [ -f "unichain-node/nodekey" ]; then
+        cat unichain-node/nodekey
     else
-        echo -e "${RED}Файл nodekey не найден. Приватный ключ отсутствует.${NC}"
+        echo -e "${RED}Файл nodekey не найден.${NC}"
     fi
 }
 
 # Функция для изменения приватного ключа
 function change_private_key() {
     echo -e "${YELLOW}>> Изменение приватного ключа...${NC}"
-    cd unichain-node || { echo -e "${RED}Каталог unichain-node не найден!${NC}"; return; }
-    if [ ! -f nodekey ]; then
-        echo -e "${YELLOW}Файл nodekey не найден. Создаем новый...${NC}"
-        touch nodekey
+    if [ -f "unichain-node/nodekey" ]; then
+        nano unichain-node/nodekey
+    else
+        echo -e "${RED}Файл nodekey не найден. Создаю...${NC}"
+        touch unichain-node/nodekey
+        nano unichain-node/nodekey
     fi
-    read -p "Введите новый приватный ключ: " new_key
-    echo "$new_key" > nodekey
-    echo -e "${GREEN}>> Приватный ключ успешно обновлен.${NC}"
 }
 
 # Красивое меню
@@ -125,28 +127,26 @@ while true; do
     echo -e "${CYAN}       🌟 Меню управления Unichain Node 🌟${NC}"
     echo -e "${CYAN}============================================${NC}"
     echo -e "${GREEN}1. Установить ноду${NC}"
-    echo -e "${GREEN}2. Перезапустить ноду${NC}"
-    echo -e "${GREEN}3. Проверить состояние ноды${NC}"
+    echo -e "${GREEN}2. Просмотреть файлы genesis-l2.json и rollup.json${NC}"
+    echo -e "${GREEN}3. Изменить файлы genesis-l2.json и rollup.json${NC}"
     echo -e "${GREEN}4. Остановить ноду${NC}"
-    echo -e "${GREEN}5. Просмотр логов Unichain OP${NC}"
-    echo -e "${GREEN}6. Просмотр логов Unichain${NC}"
-    echo -e "${GREEN}7. Просмотреть приватный ключ${NC}"
-    echo -e "${GREEN}8. Изменить приватный ключ${NC}"
-    echo -e "${RED}9. Выйти${NC}"
+    echo -e "${GREEN}5. Проверить состояние ноды${NC}"
+    echo -e "${GREEN}6. Просмотреть приватный ключ${NC}"
+    echo -e "${GREEN}7. Изменить приватный ключ${NC}"
+    echo -e "${RED}8. Выйти${NC}"
     echo -e "${CYAN}============================================${NC}"
-    read -p "Выберите действие (1-9): " choice
+    read -p "Выберите действие (1-8): " choice
 
     case $choice in
         1) install_node ;;
-        2) restart_node ;;
-        3) check_node ;;
+        2) view_files ;;
+        3) edit_files ;;
         4) stop_node ;;
-        5) view_logs_op ;;
-        6) view_logs_unichain ;;
-        7) view_private_key ;;
-        8) change_private_key ;;
-        9) echo -e "${RED}Выход из скрипта.${NC}"; break ;;
-        *) echo -e "${RED}Неверный выбор. Пожалуйста, выберите от 1 до 9.${NC}" ;;
+        5) check_node ;;
+        6) view_private_key ;;
+        7) change_private_key ;;
+        8) echo -e "${RED}Выход из скрипта.${NC}"; break ;;
+        *) echo -e "${RED}Неверный выбор. Пожалуйста, выберите от 1 до 8.${NC}" ;;
     esac
     read -p "Нажмите Enter для возврата в меню..."
 done
